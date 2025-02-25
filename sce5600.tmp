@@ -1,0 +1,149 @@
+[gd_scene load_steps=14 format=3 uid="uid://b3a6c8r8e7nen"]
+
+[ext_resource type="Script" path="res://Scripts/VR_camera.gd" id="1_1yb1c"]
+[ext_resource type="Texture2D" uid="uid://dls825ytmfehm" path="res://images/NightSkyHDRI001_2K-HDR.exr" id="1_q74fe"]
+[ext_resource type="Script" path="res://player.gd" id="2_yaww5"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_cucev"]
+panorama = ExtResource("1_q74fe")
+
+[sub_resource type="Sky" id="Sky_de2jx"]
+sky_material = SubResource("PanoramaSkyMaterial_cucev")
+
+[sub_resource type="Environment" id="Environment_00r57"]
+background_mode = 2
+sky = SubResource("Sky_de2jx")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a612y"]
+albedo_color = Color(1, 1, 0.560784, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_3fuc5"]
+material = SubResource("StandardMaterial3D_a612y")
+radius = 4.0
+height = 7.0
+radial_segments = 8
+rings = 8
+
+[sub_resource type="Gradient" id="Gradient_0nfo8"]
+colors = PackedColorArray(0, 0, 0, 1, 0, 0, 0, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_7ugu7"]
+gradient = SubResource("Gradient_0nfo8")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_x3h5r"]
+viewport_path = NodePath("player/SubViewport")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_j2r7a"]
+viewport_path = NodePath("player/SubViewport")
+
+[sub_resource type="GDScript" id="GDScript_p6kc7"]
+script/source = "extends Button
+
+@export var camera3D: Camera3D
+
+func _ready():
+	# Conectar o sinal \"pressed\" ao método local
+	connect(\"pressed\", Callable(self, \"_on_button_pressed\"))
+
+# Método chamado quando o botão é pressionado
+func _on_button_pressed():
+	print(\"Botão pressionado!\")
+"
+
+[node name="Node3D" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_00r57")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.999328, 0.0337307, -0.0143178, -0.0195542, -0.16043, 0.986854, 0.0309903, 0.986471, 0.160982, 0, 29.8726, 0)
+shadow_enabled = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 0)
+mesh = SubResource("SphereMesh_3fuc5")
+
+[node name="player" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.7708, 0)
+script = ExtResource("2_yaww5")
+
+[node name="UI" type="CanvasLayer" parent="player"]
+follow_viewport_enabled = true
+
+[node name="Background" type="Control" parent="player/UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="player/UI/Background"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("GradientTexture1D_7ugu7")
+
+[node name="Left_eye_control" type="Control" parent="player/UI"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TextureRect" type="TextureRect" parent="player/UI/Left_eye_control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(256, 256)
+texture = SubResource("ViewportTexture_x3h5r")
+
+[node name="Right_eye_control" type="Control" parent="player/UI"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TextureRect" type="TextureRect" parent="player/UI/Right_eye_control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(256, 256)
+texture = SubResource("ViewportTexture_j2r7a")
+
+[node name="Control" type="Control" parent="player/UI"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 17.0
+offset_top = 13.0
+offset_right = 17.0
+offset_bottom = 13.0
+
+[node name="Button" type="Button" parent="player/UI/Control"]
+visibility_layer = 5
+layout_mode = 0
+offset_left = 928.0
+offset_top = -2.0
+offset_right = 1114.0
+offset_bottom = 29.0
+text = "Reset Camera Rotation"
+script = SubResource("GDScript_p6kc7")
+
+[node name="SubViewport" type="SubViewport" parent="player"]
+
+[node name="GyroCam" type="Camera3D" parent="player/SubViewport" node_paths=PackedStringArray("left_eye_control", "right_eye_control", "subview_port")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13, 0)
+script = ExtResource("1_1yb1c")
+left_eye_control = NodePath("../../UI/Left_eye_control")
+right_eye_control = NodePath("../../UI/Right_eye_control")
+subview_port = NodePath("..")
