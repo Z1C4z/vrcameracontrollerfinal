@@ -1,105 +1,211 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
+from PyQt5 import QtWidgets, QtCore
 import socket
 from threading import Thread
 import json
+import os
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-class CameraControllerApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Godot Camera Controller")
+class CameraControllerApp(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Godot Camera Controller")
 
-        # Frame principal
-        self.frame = ttk.Frame(root, padding="20")
-        self.frame.grid(row=0, column=0, sticky="nsew")
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.top_bar_layout = QtWidgets.QHBoxLayout()
 
-        # Label e campo de entrada para o IP
-        self.ip_label = ttk.Label(self.frame, text="IP do Dispositivo Godot:")
-        self.ip_label.grid(row=0, column=0, sticky="w")
+        # ComboBox for presets
+        self.preset_combobox = QtWidgets.QComboBox()
+        self.preset_combobox.addItem("Selecione Predefinição")
+        self.preset_combobox.currentIndexChanged.connect(self.load_preset)
+        self.top_bar_layout.addWidget(self.preset_combobox)
 
-        self.ip_entry = ttk.Entry(self.frame, width=20)
-        self.ip_entry.insert(0, "127.0.0.1")  # Valor padrão
-        self.ip_entry.grid(row=0, column=1, padx=10, pady=10)
+        # Save and Delete buttons
+        self.save_button = QtWidgets.QPushButton("Salvar Predefinição")
+        self.save_button.clicked.connect(self.save_preset)
+        self.delete_button = QtWidgets.QPushButton("Excluir Predefinição")
+        self.delete_button.clicked.connect(self.delete_preset)
+        self.top_bar_layout.addWidget(self.save_button)
+        self.top_bar_layout.addWidget(self.delete_button)
 
-        # Botão para enviar o comando "reset"
-        self.reset_button = ttk.Button(
-            self.frame,
-            text="Resetar Rotação",
-            command=self.on_reset_click,
-            width=20
-        )
-        self.reset_button.grid(row=1, column=0, columnspan=2, pady=10)
+        self.layout.addLayout(self.top_bar_layout)
 
-        # Label e campo de entrada para a distância de divisão dos olhos (IPD)
-        self.ipd_label = ttk.Label(self.frame, text="Distância IPD (valor padrão: 2):")
-        self.ipd_label.grid(row=2, column=0, sticky="w", pady=10)
+        # IP Field
+        self.ip_entry = QtWidgets.QLineEdit("127.0.0.1")
+        self.layout.addWidget(QtWidgets.QLabel("IP do Dispositivo Godot:"))
+        self.layout.addWidget(self.ip_entry)
 
-        self.ipd_entry = ttk.Entry(self.frame, width=10)
-        self.ipd_entry.insert(0, "2")  # Valor padrão
-        self.ipd_entry.grid(row=2, column=1, padx=10)
+        # Reset Button
+        self.reset_button = QtWidgets.QPushButton("Resetar Rotação")
+        self.reset_button.clicked.connect(self.on_reset_click)
+        self.layout.addWidget(self.reset_button)
 
-        # Botão para enviar o valor IPD
-        self.ipd_button = ttk.Button(
-            self.frame,
-            text="Enviar Distância IPD",
-            command=self.on_ipd_click,
-            width=20
-        )
-        self.ipd_button.grid(row=3, column=0, columnspan=2, pady=10)
+        # IPD as Scale
+        self.ipd_scale = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.ipd_scale.setRange(0, 200)  # 0 to 20.0 as scale
+        self.ipd_scale.setValue(20)  # Default 2.0
+        self.ipd_label = QtWidgets.QLabel(f"Distância IPD: {self.ipd_scale.value() / 10}")
+        self.ipd_scale.valueChanged.connect(self.update_ipd_label)
+        self.layout.addWidget(self.ipd_label)
+        self.layout.addWidget(self.ipd_scale)
+
+        # SubviewportScale
+        self.svs_scale, self.svs_label = self.create_scale_with_label("SubviewPortScale", 10, 30, 15)
+        # Vr Filter Strength
+        self.vfs_scale, self.vfs_label = self.create_scale_with_label("Vr Filter Strength", 0, 100, 0)
+        # Gyro Sensitive
+        self.gs_spinbox = self.create_spinbox("Gyro Sensitive", 0, 100, 50)
+
+        # Send Values Button
+        self.send_values_button = QtWidgets.QPushButton("Enviar Valores Ajustados")
+        self.send_values_button.clicked.connect(self.on_send_values_click)
+        self.layout.addWidget(self.send_values_button)
+
+        self.load_presets()
+
+    def create_scale(self, label, min_value, max_value, default_value):
+        scale = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        scale.setRange(min_value, max_value)
+        scale.setValue(default_value)
+        self.layout.addWidget(QtWidgets.QLabel(f"{label} ({default_value}):"))
+        self.layout.addWidget(scale)
+        return scale
+
+    def create_scale_with_label(self, label, min_value, max_value, default_value):
+        scale = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        scale.setRange(min_value, max_value)
+        scale.setValue(default_value)
+        scale.valueChanged.connect(lambda: self.update_label(scale, label))  # Connect to update the label
+        label_widget = QtWidgets.QLabel(f"{label} ({default_value}):")
+        value_label = QtWidgets.QLabel(f"{default_value}")
+        self.layout.addWidget(label_widget)
+        self.layout.addWidget(scale)
+        self.layout.addWidget(value_label)
+        return scale, value_label
+
+    def update_label(self, scale, label):
+        """Atualiza o valor do label associado ao controle (Slider ou SpinBox)."""
+        value = scale.value()
+        label.setText(f"{label.text().split(' ')[0]} ({value})")
+
+    def update_ipd_label(self):
+        """Atualiza o valor do IPD mostrado na label quando a escala for alterada."""
+        self.ipd_label.setText(f"Distância IPD: {self.ipd_scale.value() / 10}")
+
+    def create_spinbox(self, label, min_value, max_value, default_value):
+        spinbox = QtWidgets.QSpinBox()
+        spinbox.setRange(min_value, max_value)
+        spinbox.setValue(default_value)
+        self.layout.addWidget(QtWidgets.QLabel(f"{label} ({default_value}):"))
+        self.layout.addWidget(spinbox)
+        return spinbox
+
+    def load_presets(self):
+        """Carregar predefinições do arquivo JSON."""
+        if os.path.exists("presets.json"):
+            with open("presets.json", "r") as f:
+                presets = json.load(f)
+            for preset in presets:
+                self.preset_combobox.addItem(preset)
+
+    def save_presets(self, preset_name, values):
+        """Salvar predefinições em um arquivo JSON."""
+        presets = self.load_presets_from_file()
+        presets[preset_name] = values
+        with open("presets.json", "w") as f:
+            json.dump(presets, f)
+
+    def load_presets_from_file(self):
+        if os.path.exists("presets.json"):
+            with open("presets.json", "r") as f:
+                return json.load(f)
+        return {}
+
+    def save_preset(self):
+        """Salvar a predefinição atual com um nome especificado."""
+        preset_name, ok = QtWidgets.QInputDialog.getText(self, "Salvar Predefinição", "Nome da predefinição:")
+        if ok and preset_name:
+            values = {
+                "ipd": self.ipd_scale.value() / 10,  # Transformando o valor da escala para valor real
+                "subviewport_scale": self.svs_scale.value() / 10,
+                "vr_filter_strength": self.vfs_scale.value(),
+                "gyro_sensitive": self.gs_spinbox.value()
+            }
+            self.save_presets(preset_name, values)
+            self.preset_combobox.addItem(preset_name)
+            QtWidgets.QMessageBox.information(self, "Sucesso", "Predefinição salva com sucesso!")
+
+    def delete_preset(self):
+        """Excluir a predefinição selecionada."""
+        preset_name = self.preset_combobox.currentText()
+        if preset_name == "Selecione Predefinição":
+            QtWidgets.QMessageBox.warning(self, "Aviso", "Selecione uma predefinição para excluir.")
+            return
+
+        presets = self.load_presets_from_file()
+        if preset_name in presets:
+            del presets[preset_name]
+            with open("presets.json", "w") as f:
+                json.dump(presets, f)
+
+            self.preset_combobox.removeItem(self.preset_combobox.currentIndex())
+            QtWidgets.QMessageBox.information(self, "Sucesso", "Predefinição excluída com sucesso!")
+
+    def load_preset(self):
+        """Carregar os valores de uma predefinição selecionada."""
+        preset_name = self.preset_combobox.currentText()
+        if preset_name == "Selecione Predefinição":
+            return
+
+        presets = self.load_presets_from_file()
+        if preset_name in presets:
+            values = presets[preset_name]
+            self.ipd_scale.setValue(int(values["ipd"] * 10))
+            self.svs_scale.setValue(int(values["subviewport_scale"] * 10))
+            self.vfs_scale.setValue(values["vr_filter_strength"])
+            self.gs_spinbox.setValue(values["gyro_sensitive"])
 
     def send_reset(self, ip, port=5005):
-        try:
-            message = {"reset": 0}
-            data = json.dumps(message)
-            sock.sendto(data.encode("utf-8"), (ip, port))
-            print("Sinal de reset enviado com sucesso!")
-            messagebox.showinfo("Sucesso", "Sinal de reset enviado com sucesso!")
-        except Exception as e:
-            print(f"Erro na conexão: {str(e)}")
-            messagebox.showerror("Erro", f"Erro na conexão: {str(e)}")
+        self.send_message({"reset": 0}, ip, port)
 
     def send_ipd(self, ip, ipd_value, port=5005):
+        self.send_message({"ipd": ipd_value}, ip, port)
+
+    def send_subviewport_scale(self, ip, svs_value, port=5005):
+        self.send_message({"subviewport_scale": svs_value}, ip, port)
+
+    def send_vr_filter_strength(self, ip, vfs_value, port=5005):
+        self.send_message({"vr_filter_strength": vfs_value}, ip, port)
+
+    def send_gyro_sensitive(self, ip, gs_value, port=5005):
+        self.send_message({"gyro_sensitive": gs_value}, ip, port)
+
+    def send_message(self, message, ip, port=5005):
         try:
-            message = {"ipd": ipd_value}
             data = json.dumps(message)
             sock.sendto(data.encode("utf-8"), (ip, port))
-            print(f"Sinal de IPD ({ipd_value}) enviado com sucesso!")
-            messagebox.showinfo("Sucesso", f"Sinal de IPD ({ipd_value}) enviado com sucesso!")
+            QtWidgets.QMessageBox.information(self, "Sucesso", f"Sinal enviado com sucesso!")
         except Exception as e:
-            print(f"Erro na conexão: {str(e)}")
-            messagebox.showerror("Erro", f"Erro na conexão: {str(e)}")
+            QtWidgets.QMessageBox.critical(self, "Erro", f"Erro na conexão: {str(e)}")
 
     def on_reset_click(self):
-        ip = self.ip_entry.get()  # Obtém o IP do campo de entrada
-        if not ip:
-            messagebox.showwarning("Aviso", "Por favor, insira um IP válido.")
-            return
+        ip = self.ip_entry.text()
+        if ip:
+            Thread(target=self.send_reset, args=(ip,)).start()
 
-        # Usa uma thread para enviar o comando sem travar a interface
-        Thread(target=self.send_reset, args=(ip,)).start()
+    def on_send_values_click(self):
+        ip = self.ip_entry.text()
+        svs_value = self.svs_scale.value() / 10
+        vfs_value = self.vfs_scale.value()
+        gs_value = self.gs_spinbox.value()
 
-    def on_ipd_click(self):
-        ip = self.ip_entry.get()  # Obtém o IP do campo de entrada
-        ipd_value = self.ipd_entry.get()
-
-        # Valida o valor de IPD
-        try:
-            ipd_value = float(ipd_value)
-        except ValueError:
-            messagebox.showwarning("Aviso", "Por favor, insira um valor válido para a distância IPD.")
-            return
-
-        # Usa uma thread para enviar o valor de IPD sem travar a interface
-        Thread(target=self.send_ipd, args=(ip, ipd_value)).start()
+        Thread(target=self.send_subviewport_scale, args=(ip, svs_value)).start()
+        Thread(target=self.send_vr_filter_strength, args=(ip, vfs_value)).start()
+        Thread(target=self.send_gyro_sensitive, args=(ip, gs_value)).start()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-
-    # Melhorando a aparência da interface
-    root.option_add("*TButton.padding", [10, 5])  # Ajusta o padding dos botões
-    root.option_add("*Font", "Helvetica 10")
-
-    app = CameraControllerApp(root)
-    root.mainloop()
+    app = QtWidgets.QApplication([])
+    window = CameraControllerApp()
+    window.resize(400, 400)
+    window.show()
+    app.exec_()
