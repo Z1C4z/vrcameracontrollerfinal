@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import socket
 from threading import Thread
+import json
 
 class CameraControllerApp:
     def __init__(self, root):
@@ -30,16 +31,16 @@ class CameraControllerApp:
         )
         self.reset_button.grid(row=1, column=0, columnspan=2, pady=10)
 
-    def send_reset(self, ip, port=57387):
+    def send_reset(self, ip, port=5005):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((ip, port))
-                s.sendall(b"reset")  # Envia o comando "reset"
+                s.sendall("reset".encode("utf-8"))  # Envia o comando "reset"
             print("Sinal de reset enviado com sucesso!")
-            messagebox.showinfo("Sucesso", "Sinal de reset enviado com sucesso!")
+            messagebox.showinfo("Sucesso", "Sinal enviado com Sucesso!")
         except Exception as e:
             print(f"Erro na conexão: {str(e)}")
-            messagebox.showerror("Erro", f"Erro na conexão: {str(e)}")
+            messagebox.showerror("Erro", f"Erro ao comunicar com a Aplicação!\n{e}")
 
     def on_reset_click(self):
         ip = self.ip_entry.get()  # Obtém o IP do campo de entrada
