@@ -1,10 +1,11 @@
-[gd_scene load_steps=18 format=3 uid="uid://b3a6c8r8e7nen"]
+[gd_scene load_steps=17 format=3 uid="uid://b3a6c8r8e7nen"]
 
 [ext_resource type="Script" path="res://VR_camera.gd" id="1_1yb1c"]
 [ext_resource type="Texture2D" uid="uid://dls825ytmfehm" path="res://images/NightSkyHDRI001_2K-HDR.exr" id="1_q74fe"]
 [ext_resource type="Script" path="res://conectSever.gd" id="2_4soh0"]
 [ext_resource type="Script" path="res://hands.gd" id="4_tlulx"]
 [ext_resource type="Script" path="res://multi_mesh_instance_3d.gd" id="5_2whre"]
+[ext_resource type="Script" path="res://area_3d.gd" id="6_7wviv"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_cucev"]
 panorama = ExtResource("1_q74fe")
@@ -40,11 +41,7 @@ viewport_path = NodePath("player/SubViewport")
 [sub_resource type="ViewportTexture" id="ViewportTexture_j2r7a"]
 viewport_path = NodePath("player/SubViewport")
 
-[sub_resource type="MultiMesh" id="MultiMesh_1plv4"]
-
 [sub_resource type="BoxShape3D" id="BoxShape3D_xshnt"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_cwwyx"]
 
 [node name="Node3D" type="Node3D"]
 
@@ -138,19 +135,16 @@ subview_port = NodePath("..")
 script = ExtResource("4_tlulx")
 
 [node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="player/SubViewport/GyroCam"]
-multimesh = SubResource("MultiMesh_1plv4")
 script = ExtResource("5_2whre")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="player/SubViewport"]
-transform = Transform3D(-0.798772, 0, 0.601634, 0, 1, 0, -0.601634, 0, -0.798772, -3.08255, 14.4171, 2.23168)
+transform = Transform3D(-0.798772, 0, 0.601634, 0, 1, 0, -0.601634, 0, -0.798772, 0, 13, 0)
 
 [node name="Area3D" type="Area3D" parent="player/SubViewport/StaticBody3D"]
+script = ExtResource("6_7wviv")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="player/SubViewport/StaticBody3D/Area3D"]
 shape = SubResource("BoxShape3D_xshnt")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="player/SubViewport/StaticBody3D/Area3D"]
-mesh = SubResource("BoxMesh_cwwyx")
 
 [connection signal="pressed" from="player/UI/Left_eye_control/Button" to="player/SubViewport/GyroCam" method="reset_rotation"]
 [connection signal="area_entered" from="player/SubViewport/StaticBody3D/Area3D" to="player/SubViewport/GyroCam/MultiMeshInstance3D" method="_on_area_3d_area_entered"]
