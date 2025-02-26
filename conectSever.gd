@@ -17,11 +17,7 @@ func _process(_delta):
 		var sinal = JSON.parse_string(message)
 		
 		if sinal:
-			var alert =  sinal.keys()[0]
-			if alert == "reset":
-				reset_gyro_camera()
-			else: if alert == "ipd":
-				change_divide_value(sinal["ipd"]);
+			print(sinal);
 
 func reset_gyro_camera():
 	if gyroCam and gyroCam.has_method("reset_rotation"):

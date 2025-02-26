@@ -50,11 +50,31 @@ class CameraControllerApp(QtWidgets.QWidget):
         self.layout.addWidget(self.ipd_scale)
 
         # SubviewportScale
-        self.svs_scale, self.svs_label = self.create_scale_with_label("SubviewPortScale", 10, 30, 15)
+        self.svs_scale = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.svs_scale.setRange(10, 30)
+        self.svs_scale.setValue(15)
+        self.svs_label = QtWidgets.QLabel(f"Subviewport Scale: {self.svs_scale.value()}")
+        self.svs_scale.valueChanged.connect(self.update_svs_label)
+        self.layout.addWidget(self.svs_label)
+        self.layout.addWidget(self.svs_scale)
+
         # Vr Filter Strength
-        self.vfs_scale, self.vfs_label = self.create_scale_with_label("Vr Filter Strength", 0, 100, 0)
+        self.vfs_scale = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.vfs_scale.setRange(0, 100)
+        self.vfs_scale.setValue(0)
+        self.vfs_label = QtWidgets.QLabel(f"Vr Filter Strength: {self.vfs_scale.value()}")
+        self.vfs_scale.valueChanged.connect(self.update_vfs_label)
+        self.layout.addWidget(self.vfs_label)
+        self.layout.addWidget(self.vfs_scale)
+
         # Gyro Sensitive
-        self.gs_spinbox = self.create_spinbox("Gyro Sensitive", 0, 100, 50)
+        self.gs_scale = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.gs_scale.setRange(0, 100)
+        self.gs_scale.setValue(50)
+        self.gs_label = QtWidgets.QLabel(f"Gyro Sensitive: {self.gs_scale.value()}")
+        self.gs_scale.valueChanged.connect(self.update_gs_label)
+        self.layout.addWidget(self.gs_label)
+        self.layout.addWidget(self.gs_scale)
 
         # Send Values Button
         self.send_values_button = QtWidgets.QPushButton("Enviar Valores Ajustados")
@@ -63,42 +83,21 @@ class CameraControllerApp(QtWidgets.QWidget):
 
         self.load_presets()
 
-    def create_scale(self, label, min_value, max_value, default_value):
-        scale = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        scale.setRange(min_value, max_value)
-        scale.setValue(default_value)
-        self.layout.addWidget(QtWidgets.QLabel(f"{label} ({default_value}):"))
-        self.layout.addWidget(scale)
-        return scale
-
-    def create_scale_with_label(self, label, min_value, max_value, default_value):
-        scale = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        scale.setRange(min_value, max_value)
-        scale.setValue(default_value)
-        scale.valueChanged.connect(lambda: self.update_label(scale, label))  # Connect to update the label
-        label_widget = QtWidgets.QLabel(f"{label} ({default_value}):")
-        value_label = QtWidgets.QLabel(f"{default_value}")
-        self.layout.addWidget(label_widget)
-        self.layout.addWidget(scale)
-        self.layout.addWidget(value_label)
-        return scale, value_label
-
-    def update_label(self, scale, label):
-        """Atualiza o valor do label associado ao controle (Slider ou SpinBox)."""
-        value = scale.value()
-        label.setText(f"{label.text().split(' ')[0]} ({value})")
-
     def update_ipd_label(self):
         """Atualiza o valor do IPD mostrado na label quando a escala for alterada."""
         self.ipd_label.setText(f"Distância IPD: {self.ipd_scale.value() / 10}")
 
-    def create_spinbox(self, label, min_value, max_value, default_value):
-        spinbox = QtWidgets.QSpinBox()
-        spinbox.setRange(min_value, max_value)
-        spinbox.setValue(default_value)
-        self.layout.addWidget(QtWidgets.QLabel(f"{label} ({default_value}):"))
-        self.layout.addWidget(spinbox)
-        return spinbox
+    def update_svs_label(self):
+        """Atualiza o valor do Subviewport Scale mostrado na label quando a escala for alterada."""
+        self.svs_label.setText(f"Subviewport Scale: {self.svs_scale.value()}")
+
+    def update_vfs_label(self):
+        """Atualiza o valor do Vr Filter Strength mostrado na label quando a escala for alterada."""
+        self.vfs_label.setText(f"Vr Filter Strength: {self.vfs_scale.value()}")
+
+    def update_gs_label(self):
+        """Atualiza o valor do Gyro Sensitive mostrado na label quando a escala for alterada."""
+        self.gs_label.setText(f"Gyro Sensitive: {self.gs_scale.value()}")
 
     def load_presets(self):
         """Carregar predefinições do arquivo JSON."""
@@ -127,9 +126,9 @@ class CameraControllerApp(QtWidgets.QWidget):
         if ok and preset_name:
             values = {
                 "ipd": self.ipd_scale.value() / 10,  # Transformando o valor da escala para valor real
-                "subviewport_scale": self.svs_scale.value() / 10,
+                "subviewport_scale": self.svs_scale.value(),
                 "vr_filter_strength": self.vfs_scale.value(),
-                "gyro_sensitive": self.gs_spinbox.value()
+                "gyro_sensitive": self.gs_scale.value()
             }
             self.save_presets(preset_name, values)
             self.preset_combobox.addItem(preset_name)
@@ -161,9 +160,9 @@ class CameraControllerApp(QtWidgets.QWidget):
         if preset_name in presets:
             values = presets[preset_name]
             self.ipd_scale.setValue(int(values["ipd"] * 10))
-            self.svs_scale.setValue(int(values["subviewport_scale"] * 10))
+            self.svs_scale.setValue(values["subviewport_scale"])
             self.vfs_scale.setValue(values["vr_filter_strength"])
-            self.gs_spinbox.setValue(values["gyro_sensitive"])
+            self.gs_scale.setValue(values["gyro_sensitive"])
 
     def send_reset(self, ip, port=5005):
         self.send_message({"reset": 0}, ip, port)
@@ -195,13 +194,14 @@ class CameraControllerApp(QtWidgets.QWidget):
 
     def on_send_values_click(self):
         ip = self.ip_entry.text()
-        svs_value = self.svs_scale.value() / 10
+        svs_value = self.svs_scale.value()
         vfs_value = self.vfs_scale.value()
-        gs_value = self.gs_spinbox.value()
+        gs_value = self.gs_scale.value()
 
         Thread(target=self.send_subviewport_scale, args=(ip, svs_value)).start()
         Thread(target=self.send_vr_filter_strength, args=(ip, vfs_value)).start()
         Thread(target=self.send_gyro_sensitive, args=(ip, gs_value)).start()
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
