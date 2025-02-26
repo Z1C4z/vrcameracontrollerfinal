@@ -133,6 +133,7 @@ offset_bottom = -193.0
 text = "LHPS: None"
 
 [node name="right_handposeState" type="Label" parent="player/UI/Right_eye_control"]
+layout_mode = 0
 offset_left = 126.0
 offset_top = -192.0
 offset_right = 256.0
