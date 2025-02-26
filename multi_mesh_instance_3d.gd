@@ -1,7 +1,8 @@
 extends MultiMeshInstance3D
 
-@onready var camera = $"../../GyroCam"  # Caminho até a câmera
-@onready var area3d = $"../../StaticBody3D/Area3D"  # Caminho até o Area3D
+@onready var camera = $"/root/Node3D/player/SubViewPort/GyroCam"  # Caminho até a câmera
+@onready var area3d = $"StaticBody3D/Area3D"  # Caminho até o Area3D
+# @onready var hand = $
 
 func update_hand_positions(hand_points: Array):
 	var mesh = multimesh
@@ -30,4 +31,4 @@ func check_collision():
 
 
 func _on_area_3d_area_entered(area: Area3D) -> void:
-	pass # Replace with function body.
+	print('colidido') # Replace with function body.

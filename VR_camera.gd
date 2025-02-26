@@ -54,3 +54,8 @@ func _process(delta):
 func reset_rotation():
 	# Zera a rotação da câmera (olhando para frente no eixo Z)
 	rotation_degrees = Vector3.ZERO
+
+# Converte uma posição 3D para coordenadas 2D da tela
+func world_to_screen(object_3d: Node3D, camera: Camera3D) -> Vector2:
+	var screen_pos = camera.unproject_position(object_3d.global_transform.origin)
+	return screen_pos

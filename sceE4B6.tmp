@@ -124,21 +124,6 @@ grow_vertical = 2
 pivot_offset = Vector2(256, 256)
 texture = SubResource("ViewportTexture_j2r7a")
 
-[node name="Left_handposeState" type="Label" parent="player/UI/Right_eye_control"]
-layout_mode = 0
-offset_left = 127.0
-offset_top = -224.0
-offset_right = 257.0
-offset_bottom = -193.0
-text = "LHPS: None"
-
-[node name="right_handposeState" type="Label" parent="player/UI/Right_eye_control"]
-offset_left = 126.0
-offset_top = -192.0
-offset_right = 256.0
-offset_bottom = -161.0
-text = "RHPS: None"
-
 [node name="SubViewport" type="SubViewport" parent="player"]
 
 [node name="GyroCam" type="Camera3D" parent="player/SubViewport" node_paths=PackedStringArray("left_eye_control", "right_eye_control", "subview_port")]
@@ -148,11 +133,11 @@ left_eye_control = NodePath("../../UI/Left_eye_control")
 right_eye_control = NodePath("../../UI/Right_eye_control")
 subview_port = NodePath("..")
 
-[node name="Hands" type="Node2D" parent="player/SubViewport/GyroCam"]
+[node name="Node2D" type="Node2D" parent="player/SubViewport/GyroCam"]
 script = ExtResource("4_tlulx")
 
 [node name="box" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.970406, 0.163503, 0.177708, 0, 0.735908, -0.677081, -0.241482, 0.657043, 0.714129, -5.6086, 13.7327, 2.70777)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.6086, 13.7327, 4.64227)
 mesh = SubResource("BoxMesh_fiq1i")
 
 [connection signal="pressed" from="player/UI/Left_eye_control/Button" to="player/SubViewport/GyroCam" method="reset_rotation"]
