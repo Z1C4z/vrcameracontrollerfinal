@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QInputDialog, QMessageBox
 )
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 
 # Cria o socket UDP que será compartilhado
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -22,10 +22,13 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # Painel de Controle - Código 1
 ###############################
 class CameraControllerApp(QWidget):
+    message_signal = pyqtSignal(str, str)  # (tipo, mensagem)
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Godot Camera Controller")
         self.layout = QVBoxLayout(self)
+        self.message_signal.connect(self.show_message)
 
         # Barra superior com combobox e botões
         self.top_bar_layout = QHBoxLayout()
@@ -54,8 +57,8 @@ class CameraControllerApp(QWidget):
 
         # Slider IPD
         self.ipd_scale = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.ipd_scale.setRange(0, 200)  # 0 a 20.0 como escala
-        self.ipd_scale.setValue(20)  # Valor padrão 2.0
+        self.ipd_scale.setRange(0, 200)
+        self.ipd_scale.setValue(20)
         self.ipd_label = QtWidgets.QLabel(f"Distância IPD: {self.ipd_scale.value() / 10}")
         self.ipd_scale.valueChanged.connect(self.update_ipd_label)
         self.layout.addWidget(self.ipd_label)
@@ -94,6 +97,12 @@ class CameraControllerApp(QWidget):
         self.layout.addWidget(self.send_values_button)
 
         self.load_presets()
+
+    def show_message(self, msg_type, message):
+        if msg_type == "info":
+            QMessageBox.information(self, "Sucesso", message)
+        elif msg_type == "error":
+            QMessageBox.critical(self, "Erro", message)
 
     def update_ipd_label(self):
         self.ipd_label.setText(f"Distância IPD: {self.ipd_scale.value() / 10}")
@@ -137,12 +146,12 @@ class CameraControllerApp(QWidget):
             }
             self.save_presets(preset_name, values)
             self.preset_combobox.addItem(preset_name)
-            QMessageBox.information(self, "Sucesso", "Predefinição salva com sucesso!")
+            self.message_signal.emit("info", "Predefinição salva com sucesso!")
 
     def delete_preset(self):
         preset_name = self.preset_combobox.currentText()
         if preset_name == "Selecione Predefinição":
-            QMessageBox.warning(self, "Aviso", "Selecione uma predefinição para excluir.")
+            self.message_signal.emit("error", "Selecione uma predefinição para excluir.")
             return
 
         presets = self.load_presets_from_file()
@@ -152,7 +161,7 @@ class CameraControllerApp(QWidget):
                 json.dump(presets, f)
 
             self.preset_combobox.removeItem(self.preset_combobox.currentIndex())
-            QMessageBox.information(self, "Sucesso", "Predefinição excluída com sucesso!")
+            self.message_signal.emit("info", "Predefinição excluída com sucesso!")
 
     def load_preset(self):
         preset_name = self.preset_combobox.currentText()
@@ -170,25 +179,13 @@ class CameraControllerApp(QWidget):
     def send_reset(self, ip, port=5005):
         self.send_message({"reset": 0}, ip, port)
 
-    def send_ipd(self, ip, ipd_value, port=5005):
-        self.send_message({"ipd": ipd_value}, ip, port)
-
-    def send_subviewport_scale(self, ip, svs_value, port=5005):
-        self.send_message({"subviewport_scale": svs_value}, ip, port)
-
-    def send_vr_filter_strength(self, ip, vfs_value, port=5005):
-        self.send_message({"vr_filter_strength": vfs_value}, ip, port)
-
-    def send_gyro_sensitive(self, ip, gs_value, port=5005):
-        self.send_message({"gyro_sensitive": gs_value}, ip, port)
-
     def send_message(self, message, ip, port=5005):
         try:
             data = json.dumps(message)
             sock.sendto(data.encode("utf-8"), (ip, port))
-            QMessageBox.information(self, "Sucesso", f"Sinal enviado com sucesso!")
+            self.message_signal.emit("info", "Sinal enviado com sucesso!")
         except Exception as e:
-            QMessageBox.critical(self, "Erro", f"Erro na conexão: {str(e)}")
+            self.message_signal.emit("error", f"Erro na conexão: {str(e)}")
 
     def on_reset_click(self):
         ip = self.ip_entry.text()
@@ -197,14 +194,12 @@ class CameraControllerApp(QWidget):
 
     def on_send_values_click(self):
         ip = self.ip_entry.text()
-        # Agrupa os valores atuais em um único dicionário
         data = {
             "ipd": self.ipd_scale.value() / 10,
             "subviewport_scale": self.svs_scale.value(),
             "vr_filter_strength": self.vfs_scale.value(),
             "gyro_sensitive": self.gs_scale.value()
         }
-        # Envia a mensagem JSON em uma thread separada
         Thread(target=self.send_message, args=(data, ip)).start()
 
 #######################################
@@ -254,7 +249,7 @@ class HandTrackingWidget(QWidget):
     def start_tracking(self):
         if self.cap is None:
             self.cap = cv2.VideoCapture(0)
-        self.timer.start(30)  # Aproximadamente 33 FPS
+        self.timer.start(30)
 
     def update_frame(self):
         if self.cap is not None and self.cap.isOpened():
@@ -285,7 +280,6 @@ class HandTrackingWidget(QWidget):
                     pos = (50, 50 if label == "Right" else 100)
                     cv2.putText(frame, f"{label}: {pose}", pos, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-            # Envia os dados via UDP se houver detecção
             if hand_data:
                 message = json.dumps(hand_data)
                 self.sock.sendto(message.encode(), (self.UDP_IP, self.UDP_PORT))
@@ -306,7 +300,6 @@ class HandTrackingWidget(QWidget):
             self.cap = None
         self.video_label.clear()
 
-    # Funções auxiliares para detecção de gestos
     def is_finger_extended(self, hand_landmarks, finger_tip, finger_dip):
         return hand_landmarks.landmark[finger_tip].y < hand_landmarks.landmark[finger_dip].y
 
@@ -345,16 +338,14 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         layout = QHBoxLayout(central_widget)
 
-        # Instancia os dois widgets
         self.camera_controller = CameraControllerApp()
         self.hand_tracking = HandTrackingWidget()
 
-        # Adiciona os widgets lado a lado
         layout.addWidget(self.camera_controller)
         layout.addWidget(self.hand_tracking)
 
         self.setCentralWidget(central_widget)
-        self.resize(900, 500)  # Ajuste o tamanho da janela conforme necessário
+        self.resize(900, 500)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
