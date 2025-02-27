@@ -238,7 +238,7 @@ class HandTrackingWidget(QWidget):
         self.timer.timeout.connect(self.update_frame)
 
         # Configurações de socket e MediaPipe
-        self.UDP_IP = "127.0.0.1"
+        self.UDP_IP = "192.168.0.100"
         self.UDP_PORT = 5005
         self.sock = sock
         self.mp_hands = mp.solutions.hands

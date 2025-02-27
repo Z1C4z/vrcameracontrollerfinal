@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://VR_camera.gd" id="1_1yb1c"]
 [ext_resource type="Texture2D" uid="uid://dls825ytmfehm" path="res://images/NightSkyHDRI001_2K-HDR.exr" id="1_q74fe"]
 [ext_resource type="Script" path="res://conectSever.gd" id="2_4soh0"]
-[ext_resource type="Script" path="res://left_hand.gd" id="4_4hijt"]
+[ext_resource type="Script" path="res://hands.gd" id="4_tlulx"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_cucev"]
 panorama = ExtResource("1_q74fe")
@@ -149,10 +149,8 @@ left_eye_control = NodePath("../../UI/Left_eye_control")
 right_eye_control = NodePath("../../UI/Right_eye_control")
 subview_port = NodePath("..")
 
-[node name="left_hand" type="Node2D" parent="player/SubViewport/GyroCam"]
-script = ExtResource("4_4hijt")
-
-[node name="left_hand2" type="Node2D" parent="player/SubViewport/GyroCam"]
+[node name="right_hand" type="Node2D" parent="player/SubViewport/GyroCam"]
+script = ExtResource("4_tlulx")
 
 [node name="box" type="MeshInstance3D" parent="."]
 transform = Transform3D(0.970406, 0.163503, 0.177708, 0, 0.735908, -0.677081, -0.241482, 0.657043, 0.714129, -5.6086, 13.7327, 2.70777)

@@ -41,23 +41,17 @@ func _process(_delta):
 			print("A mão está sobre o objeto 3D!")
 
 func process_hand_data(hand_data):
+	print(hand_data)
 	hands.clear()
-#	left_handpose = hand_data['left']['pose']
-#	print(left_handpose)
-#	right_handpose = hand_data['right']['pose']
-#	print(right_handpose)
-	for hand in hand_data.keys():
-		print(hand_data.keys())
-		var raw_landmarks = hand_data[hand]["landmarks"]
-		var screen_landmarks = []
-		print(raw_landmarks)
-		
-		for lm in raw_landmarks:
-			var x = int(lm["x"] * get_viewport().size.x)
-			var y = int(lm["y"] * get_viewport().size.y)
-			screen_landmarks.append(Vector2(x, y))
-		
-		hands[hand] = screen_landmarks
+	var raw_landmarks = hand_data['Left']["landmarks"]
+	var screen_landmarks = []
+	
+	for lm in raw_landmarks:
+		var x = int(lm["x"] * get_viewport().size.x)
+		var y = int(lm["y"] * get_viewport().size.y)
+		screen_landmarks.append(Vector2(x, y))
+	
+	hands['Left'] = screen_landmarks
 	queue_redraw()
 
 func _draw():
