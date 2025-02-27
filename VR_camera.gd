@@ -13,17 +13,27 @@ var left_eye_position: Vector2
 var right_eye_position: Vector2
 var distance_value: float
 var default_position = Vector3(0, 13, 0)  # Posição fixa da câmera
+var defaultData = {}
+var base_subviewport_size: Vector2  # Armazena o tamanho inicial do SubViewport
 
 func _ready():
-	# Ativar o giroscópio
+	base_subviewport_size = subview_port.size  # Salva o tamanho original
+	defaultData["subviewport_scale"] = subviewport_scale
+	defaultData["ipd"] = divide_value
+	defaultData["vr_filter_strength"] = vr_filter_strength
+	defaultData["gyro_sensitivity"] = gyro_sensitivity
+	setValues(defaultData)
+
+func setValues(values: Dictionary):
 	Input.set_use_accumulated_input(true)
 	
-	# Definir o tamanho do SubViewport
-	subview_port.size = subview_port.size * subviewport_scale
-	half_screen_size = DisplayServer.screen_get_size() / 2	
+	# Sempre redefinir o tamanho com base no valor inicial
+	subview_port.size = base_subviewport_size * values["subviewport_scale"]
+	
+	half_screen_size = DisplayServer.screen_get_size() / 2    
 	
 	# Calcular a distância entre os olhos
-	distance_value = half_screen_size.x / divide_value
+	distance_value = half_screen_size.x / values["ipd"]
 	
 	# Definir as posições iniciais para os controles dos olhos
 	left_eye_position = Vector2(half_screen_size.x - distance_value, half_screen_size.y)
@@ -31,6 +41,10 @@ func _ready():
 	
 	left_eye_control.position = left_eye_position
 	right_eye_control.position = right_eye_position
+	
+	# Atualizar configurações de sensibilidade e filtro
+	gyro_sensitivity = values["gyro_sensitivity"]
+	vr_filter_strength = values["vr_filter_strength"]
 	
 	# Garantir que a câmera comece na posição correta
 	global_position = default_position

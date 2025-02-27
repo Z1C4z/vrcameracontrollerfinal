@@ -16,10 +16,10 @@ func _process(_delta):
 		var message = packet.get_string_from_utf8()
 		var sinal = JSON.parse_string(message)
 		
-		if sinal:
-			if sinal.keys.contains("reset"):
+		if sinal:  # Check if parsing was successful
+			if sinal.has("reset"):
 				reset_gyro_camera()
-			else: if sinal.keys.contais("ipd"):
+			elif sinal.has("ipd"):
 				updateData(sinal)
 
 func reset_gyro_camera():
@@ -30,8 +30,4 @@ func reset_gyro_camera():
 		print("Erro: gyroCam não tem um método reset_rotation ou não foi atribuído")
 		
 func updateData(data: Dictionary):
-	$SubViewport/GyroCam.divide_value = data["ipd"]
-	$SubViewport/GyroCam.subviewport_scale = data["subviewport_scale"]
-	$SubViewport/GyroCam.vr_filter_strength = data["vr_filter_strength"]
-	$SubViewport/GyroCam.gyro_sensitivity = data["gyro_sensitive"]
-	$SubViewport/GyroCam._ready()
+	$SubViewport/GyroCam.setValues(data)
