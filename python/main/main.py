@@ -260,7 +260,7 @@ class HandTrackingWidget(QWidget):
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = self.hands.process(rgb_frame)
 
-            pose = "Desconhecida"
+            pose = "unknow"
             hand_data = {}
             if results.multi_hand_landmarks:
                 for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
@@ -275,7 +275,7 @@ class HandTrackingWidget(QWidget):
                     landmarks = []
                     for lm in hand_landmarks.landmark:
                         landmarks.append({"x": lm.x, "y": lm.y})
-                    hand_data[label] = {"landmarks": landmarks}
+                    hand_data[label] = {"landmarks": landmarks, "pose":pose}
                     
                     pos = (50, 50 if label == "Right" else 100)
                     cv2.putText(frame, f"{label}: {pose}", pos, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -317,15 +317,15 @@ class HandTrackingWidget(QWidget):
         thumb_index_dist = self.distance(thumb_tip, index_tip)
 
         if indicador and not medio and not anelar and not mindinho:
-            return "Apontando"
+            return "pointer"
         elif indicador and medio and anelar and mindinho:
-            return "Mão Aberta"
+            return "open"
         elif not indicador and not medio and not anelar and not mindinho:
-            return "Mão Fechada"
+            return "close"
         elif indicador and medio and not anelar and not mindinho:
-            return "Número 2"
+            return "two"
         else:
-            return "Desconhecido"
+            return "unknow"
 
 #######################################
 # Janela Principal com Layout Horizontal
