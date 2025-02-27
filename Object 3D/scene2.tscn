@@ -1,9 +1,14 @@
-[gd_scene load_steps=16 format=3 uid="uid://b3a6c8r8e7nen"]
+[gd_scene load_steps=20 format=3 uid="uid://c4dvk3uc61r3t"]
 
 [ext_resource type="Script" path="res://VR_camera.gd" id="1_1yb1c"]
 [ext_resource type="Texture2D" uid="uid://dls825ytmfehm" path="res://images/NightSkyHDRI001_2K-HDR.exr" id="1_q74fe"]
 [ext_resource type="Script" path="res://conectSever.gd" id="2_4soh0"]
 [ext_resource type="Script" path="res://hands.gd" id="4_tlulx"]
+[ext_resource type="Script" path="res://redoma_area_3d.gd" id="5_b10ws"]
+[ext_resource type="PackedScene" uid="uid://dt561ya0sritx" path="res://Object 3D/Asteroid (1).glb" id="6_e0erc"]
+[ext_resource type="PackedScene" uid="uid://c6kfbubyev6h5" path="res://Object 3D/Earth (1).glb" id="7_em75w"]
+[ext_resource type="PackedScene" uid="uid://bv7ynqc53vg21" path="res://Object 3D/Jupiter (1).glb" id="8_hmk05"]
+[ext_resource type="PackedScene" uid="uid://cywvyaq4oohkb" path="res://Object 3D/ricks ufo (1).glb" id="9_mrb4d"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_cucev"]
 panorama = ExtResource("1_q74fe")
@@ -39,11 +44,10 @@ viewport_path = NodePath("player/SubViewport")
 [sub_resource type="ViewportTexture" id="ViewportTexture_j2r7a"]
 viewport_path = NodePath("player/SubViewport")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7bkug"]
-albedo_color = Color(1, 0.305882, 1, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_fiq1i"]
-material = SubResource("StandardMaterial3D_7bkug")
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_0051r"]
+margin = 0.0
+height = 3.869
+radius = 6.0
 
 [node name="Node3D" type="Node3D"]
 
@@ -152,8 +156,14 @@ subview_port = NodePath("..")
 [node name="Hands" type="Node2D" parent="player/SubViewport/GyroCam"]
 script = ExtResource("4_tlulx")
 
-[node name="box" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.970406, 0.163503, 0.177708, 0, 0.735908, -0.677081, -0.241482, 0.657043, 0.714129, -5.6086, 13.7327, 2.70777)
-mesh = SubResource("BoxMesh_fiq1i")
+[node name="RedomaArea3D" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0338345, 12.9882, -0.0478802)
+script = ExtResource("5_b10ws")
+obstaculo_scenes = Array[PackedScene]([ExtResource("6_e0erc"), ExtResource("8_hmk05")])
+terra_scene = ExtResource("7_em75w")
+nave_scene = ExtResource("9_mrb4d")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RedomaArea3D"]
+shape = SubResource("CylinderShape3D_0051r")
 
 [connection signal="pressed" from="player/UI/Left_eye_control/Button" to="player/SubViewport/GyroCam" method="reset_rotation"]
