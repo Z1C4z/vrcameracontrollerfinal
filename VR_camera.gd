@@ -56,6 +56,11 @@ func reset_rotation():
 	rotation_degrees = Vector3.ZERO
 
 # Converte uma posição 3D para coordenadas 2D da tela
-func world_to_screen(object_3d: Node3D, camera: Camera3D) -> Vector2:
+func world_to_screen(object_3d: Node3D, camera: Camera3D) -> Dictionary:
 	var screen_pos = camera.unproject_position(object_3d.global_transform.origin)
-	return screen_pos
+
+	# Calcular raio do hitbox baseado na escala e distância do objeto para a câmera
+	var distancia = camera.global_transform.origin.distance_to(object_3d.global_transform.origin)
+	var raio = max(20, 500 / distancia)  # Ajuste os valores conforme necessário
+
+	return {"pos": screen_pos, "raio": raio}

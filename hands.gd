@@ -3,8 +3,9 @@ extends Node2D
 var udp = PacketPeerUDP.new()
 var listening_port = 5005
 var hands = {}
-var left_handpose = 'none'
-var right_handpose = 'none'
+var left_handpose = 'unkonow'
+var right_handpose = 'unkonow'
+var arrastando = false  # Variável para controlar o arrasto
 
 # Conexões entre landmarks da mão (índices baseados no MediaPipe Hands)
 var connections = [
@@ -38,16 +39,20 @@ func _process(_delta):
 
 	if camera_3d and objeto_3d:
 		if is_hand_over_object(objeto_3d, camera_3d):
-			print("A mão está sobre o objeto 3D!")
+			if not arrastando:
+				print("Mãos detectadas:", hands.keys())
+				arrastando = true
+				
+				arrastar_objeto(objeto_3d)
+			else:
+				arrastando = false
+		 
 
 func process_hand_data(hand_data):
 	hands.clear()
-#	left_handpose = hand_data['left']['pose']
-#	print(left_handpose)
-#	right_handpose = hand_data['right']['pose']
-#	print(right_handpose)
 	for hand in hand_data.keys():
 		var raw_landmarks = hand_data[hand]["landmarks"]
+		print(hand_data[hand]['pose'])
 		var screen_landmarks = []
 		
 		for lm in raw_landmarks:
@@ -56,6 +61,16 @@ func process_hand_data(hand_data):
 			screen_landmarks.append(Vector2(x, y))
 		
 		hands[hand] = screen_landmarks
+	if hand_data.has("Left"):
+		left_handpose = hand_data["Left"].get("pose", "none")
+	else:
+		left_handpose = "unknow"
+
+	if hand_data.has("Right"):
+		right_handpose = hand_data["Right"].get("pose", "none")
+	else:
+		right_handpose = "unknow"
+
 	queue_redraw()
 
 func _draw():
@@ -83,3 +98,27 @@ func is_hand_over_object(object_3d: Node3D, camera: Camera3D) -> bool:
 			if Geometry2D.is_point_in_polygon(screen_pos, hull):
 				return true
 	return false
+	
+func arrastar_objeto(obj: Node3D):
+	if hands.has("Right") and hands["Right"].size() > 13 and right_handpose == 'close':
+		var dedo_anelar = hands["Right"][13]
+		var screen_pos = Vector2(dedo_anelar.x, dedo_anelar.y)
+
+		# Projetar posição 2D da mão para coordenadas 3D
+		var ray_origin = camera_3d.project_ray_origin(screen_pos)
+		var ray_dir = camera_3d.project_ray_normal(screen_pos)
+		var distancia = 5.0  # Reduzindo a distância para testar
+		var new_position = ray_origin + (ray_dir * distancia)
+		# Movendo o cubo SEM a verificação de `arrastando` para testar
+		obj.global_transform.origin = obj.global_transform.origin.lerp(new_position, 0.2)
+		
+	elif hands.has("Left") and hands["Left"].size() > 13 and left_handpose == 'close':
+		var dedo_anelar = hands["Left"][13]
+		var screen_pos = Vector2(dedo_anelar.x, dedo_anelar.y)
+		# Projetar posição 2D da mão para coordenadas 3D
+		var ray_origin = camera_3d.project_ray_origin(screen_pos)
+		var ray_dir = camera_3d.project_ray_normal(screen_pos)
+		var distancia = 5.0  # Reduzindo a distância para testar
+		var new_position = ray_origin + (ray_dir * distancia)
+		# Movendo o cubo SEM a verificação de `arrastando` para testar
+		obj.global_transform.origin = obj.global_transform.origin.lerp(new_position, 0.2)
